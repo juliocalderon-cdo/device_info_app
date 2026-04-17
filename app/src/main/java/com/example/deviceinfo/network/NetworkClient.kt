@@ -11,37 +11,51 @@ import java.net.URL
 class NetworkClient {
 
     // URL de la Web App de Google Apps Script.
-    private val API_URL = "https://script.google.com/macros/s/AKfycbw6Gz5VMbVW8eR3LWCIAMJFtZMGdOwBvV4UlOuxGilAUUWTE0aToIeU7RJcRuku4CWCSQ/exec"
+    private val API_URL = "https://script.google.com/macros/s/AKfycbwCZrXk-ej8Y53_mtQUQnsxLfM-CHy_H3G1tlhEcYIdQcg0BabM5EL0BCd_IejVKr31/exec"
 
     /**
      * Realiza un POST con el JSON proporcionado.
      * No bloquea el hilo principal ya que debe llamarse desde un hilo secundario.
      */
     fun sendData(jsonPayload: String): Boolean {
+        var currentUrl = API_URL
         var connection: HttpURLConnection? = null
-        return try {
-            val url = URL(API_URL)
-            connection = url.openConnection() as HttpURLConnection
-            connection.requestMethod = "POST"
-            connection.setRequestProperty("Content-Type", "application/json; utf-8")
-            connection.setRequestProperty("Accept", "application/json")
-            connection.doOutput = true
-            connection.connectTimeout = 10000
-            connection.readTimeout = 10000
+        
+        try {
+            // Reintentar hasta 3 veces en caso de redirección (Apps Script usa 302)
+            repeat(3) {
+                val url = URL(currentUrl)
+                connection = url.openConnection() as HttpURLConnection
+                connection.requestMethod = "POST"
+                connection.setRequestProperty("Content-Type", "application/json; utf-8")
+                connection.setRequestProperty("Accept", "application/json")
+                connection.doOutput = true
+                connection.instanceFollowRedirects = true
+                connection.connectTimeout = 10000
+                connection.readTimeout = 10000
 
-            OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
-                writer.write(jsonPayload)
-                writer.flush()
+                OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
+                    writer.write(jsonPayload)
+                    writer.flush()
+                }
+
+                val responseCode = connection.responseCode
+                Log.d("NetworkClient", "Código de respuesta: $responseCode")
+
+                if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
+                    responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                    responseCode == 307 || responseCode == 308) {
+                    currentUrl = connection.getHeaderField("Location")
+                    connection.disconnect()
+                    Log.d("NetworkClient", "Redirigiendo a: $currentUrl")
+                } else {
+                    return responseCode in 200..299
+                }
             }
-
-            val responseCode = connection.responseCode
-            Log.d("NetworkClient", "Código de respuesta: $responseCode")
-
-            // Consideramos éxito cualquier código 2xx
-            responseCode in 200..299
+            return false
         } catch (e: Exception) {
             Log.d("NetworkClient", "Error en el envío: ${e.message}")
-            false
+            return false
         } finally {
             connection?.disconnect()
         }
