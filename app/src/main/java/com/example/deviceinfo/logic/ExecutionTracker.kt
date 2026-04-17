@@ -11,27 +11,27 @@ class ExecutionTracker(context: Context) {
     private val prefs = context.getSharedPreferences("execution_prefs", Context.MODE_PRIVATE)
 
     /**
-     * Compara el mes y año actual con el guardado en SharedPreferences.
-     * Retorna true si es un nuevo mes o si nunca se ha ejecutado.
+     * Compara el día actual con el guardado en SharedPreferences.
+     * Retorna true si es un nuevo día o si nunca se ha ejecutado.
      */
     fun shouldExecute(): Boolean {
-        val lastMonth = prefs.getInt("last_month", -1)
+        val lastDay = prefs.getInt("last_day", -1)
         val lastYear = prefs.getInt("last_year", -1)
 
         val calendar = Calendar.getInstance()
-        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentDay = calendar.get(Calendar.DAY_OF_YEAR)
         val currentYear = calendar.get(Calendar.YEAR)
 
-        return (currentMonth != lastMonth || currentYear != lastYear)
+        return (currentDay != lastDay || currentYear != lastYear)
     }
 
     /**
-     * Guarda el mes y año actual como la última ejecución exitosa.
+     * Guarda el día y año actual como la última ejecución exitosa.
      */
     fun markExecutionSuccess() {
         val calendar = Calendar.getInstance()
         prefs.edit().apply {
-            putInt("last_month", calendar.get(Calendar.MONTH))
+            putInt("last_day", calendar.get(Calendar.DAY_OF_YEAR))
             putInt("last_year", calendar.get(Calendar.YEAR))
             apply()
         }
