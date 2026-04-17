@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.example.deviceinfo.logic.DeviceCollector
 import com.example.deviceinfo.logic.ExecutionTracker
+import com.example.deviceinfo.logic.NotificationHelper
 import com.example.deviceinfo.network.NetworkClient
 import org.json.JSONObject
 import java.util.concurrent.Executors
@@ -45,11 +46,20 @@ class Orchestrator(private val context: Context) {
                     if (success) {
                         Log.d("Orchestrator", "Datos enviados exitosamente.")
                         tracker.markExecutionSuccess()
+                        NotificationHelper.showStatusNotification(
+                            context, true, "Inventario actualizado en Google Sheets."
+                        )
                     } else {
-                        Log.d("Orchestrator", "Fallo al enviar datos. Se reintentará en el próximo inicio.")
+                        Log.d("Orchestrator", "Fallo al enviar datos.")
+                        NotificationHelper.showStatusNotification(
+                            context, false, "No se pudo conectar con Apps Script."
+                        )
                     }
                 } catch (e: Exception) {
-                    Log.d("Orchestrator", "Error durante el proceso: ${e.message}")
+                    Log.d("Orchestrator", "Error: ${e.message}")
+                    NotificationHelper.showStatusNotification(
+                        context, false, "Error inesperado en la conexión."
+                    )
                 }
             }
         } else {
