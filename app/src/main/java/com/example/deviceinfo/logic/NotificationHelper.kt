@@ -19,7 +19,7 @@ object NotificationHelper {
         createNotificationChannel(context)
 
         val title = if (success) "Reporte Exitoso" else "Error en Reporte"
-        val icon = android.R.drawable.stat_sys_upload_done // Icono genérico de éxito/subida
+        val icon = android.R.drawable.ic_menu_upload // Icono público estándar
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(icon)
