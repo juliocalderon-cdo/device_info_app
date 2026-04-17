@@ -13,7 +13,7 @@ class NetworkClient {
     // URL de la Web App de Google Apps Script.
     private val API_URL = "https://script.google.com/macros/s/AKfycbwCZrXk-ej8Y53_mtQUQnsxLfM-CHy_H3G1tlhEcYIdQcg0BabM5EL0BCd_IejVKr31/exec"
 
-    fun sendData(jsonPayload: String): Boolean {
+    fun sendData(jsonPayload: String): String {
         var connection: HttpURLConnection? = null
         try {
             val url = URL(API_URL)
@@ -34,16 +34,23 @@ class NetworkClient {
             }
 
             val responseCode = connection.responseCode
-            Log.d("NetworkClient", "Código de respuesta: $responseCode")
+            val location = connection.getHeaderField("Location")
+            Log.d("NetworkClient", "Código de respuesta: $responseCode - Location: $location")
 
-            // Apps Script devuelve 302 (Found) cuando el POST es exitoso
-            // porque intenta redirigir a una página de resultado/ejecución.
-            return responseCode == HttpURLConnection.HTTP_OK || 
+            // Apps Script suele devolver 302 y redirigir al Login si no tiene permisos
+            if (responseCode == HttpURLConnection.HTTP_OK || 
                    responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
-                   responseCode == 302
+                   responseCode == 302) {
+                
+                if (location != null && location.contains("ServiceLogin")) {
+                    return "Privado: El Script no es público"
+                }
+                return "OK"
+            }
+            return "Error HTTP $responseCode"
         } catch (e: Exception) {
             Log.d("NetworkClient", "Error en el envío: ${e.message}")
-            return false
+            return "Err: ${e.javaClass.simpleName}"
         } finally {
             connection?.disconnect()
         }

@@ -41,24 +41,24 @@ class Orchestrator(private val context: Context) {
                         put("token", "CAMBIA_ESTE_TOKEN_SEGURO") // Debe coincidir con el GAS
                     }.toString()
 
-                    val success = network.sendData(json)
+                    val result = network.sendData(json)
                     
-                    if (success) {
+                    if (result == "OK") {
                         Log.d("Orchestrator", "Datos enviados exitosamente.")
                         tracker.markExecutionSuccess()
                         NotificationHelper.showStatusNotification(
                             context, true, "Inventario actualizado en Google Sheets."
                         )
                     } else {
-                        Log.d("Orchestrator", "Fallo al enviar datos.")
+                        Log.d("Orchestrator", "Fallo al enviar datos: $result")
                         NotificationHelper.showStatusNotification(
-                            context, false, "No se pudo conectar con Apps Script."
+                            context, false, result
                         )
                     }
                 } catch (e: Exception) {
                     Log.d("Orchestrator", "Error: ${e.message}")
                     NotificationHelper.showStatusNotification(
-                        context, false, "Error inesperado en la conexión."
+                        context, false, "Error: ${e.message?.take(30)}"
                     )
                 }
             }
