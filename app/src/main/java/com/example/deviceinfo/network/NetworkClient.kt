@@ -19,34 +19,36 @@ class NetworkClient {
      */
     fun sendData(jsonPayload: String): Boolean {
         var currentUrl = API_URL
-        var connection: HttpURLConnection? = null
+        var activeConnection: HttpURLConnection? = null
         
         try {
-            // Reintentar hasta 3 veces en caso de redirección (Apps Script usa 302)
             repeat(3) {
                 val url = URL(currentUrl)
-                connection = url.openConnection() as HttpURLConnection
-                connection.requestMethod = "POST"
-                connection.setRequestProperty("Content-Type", "application/json; utf-8")
-                connection.setRequestProperty("Accept", "application/json")
-                connection.doOutput = true
-                connection.instanceFollowRedirects = true
-                connection.connectTimeout = 10000
-                connection.readTimeout = 10000
+                val conn = url.openConnection() as HttpURLConnection
+                activeConnection = conn
+                
+                conn.requestMethod = "POST"
+                conn.setRequestProperty("Content-Type", "application/json; utf-8")
+                conn.setRequestProperty("Accept", "application/json")
+                conn.doOutput = true
+                conn.instanceFollowRedirects = true
+                conn.connectTimeout = 10000
+                conn.readTimeout = 10000
 
-                OutputStreamWriter(connection.outputStream, "UTF-8").use { writer ->
+                OutputStreamWriter(conn.outputStream, "UTF-8").use { writer ->
                     writer.write(jsonPayload)
                     writer.flush()
                 }
 
-                val responseCode = connection.responseCode
+                val responseCode = conn.responseCode
                 Log.d("NetworkClient", "Código de respuesta: $responseCode")
 
                 if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || 
                     responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
                     responseCode == 307 || responseCode == 308) {
-                    currentUrl = connection.getHeaderField("Location")
-                    connection.disconnect()
+                    currentUrl = conn.getHeaderField("Location")
+                    conn.disconnect()
+                    activeConnection = null
                     Log.d("NetworkClient", "Redirigiendo a: $currentUrl")
                 } else {
                     return responseCode in 200..299
@@ -57,7 +59,7 @@ class NetworkClient {
             Log.d("NetworkClient", "Error en el envío: ${e.message}")
             return false
         } finally {
-            connection?.disconnect()
+            activeConnection?.disconnect()
         }
     }
 }
