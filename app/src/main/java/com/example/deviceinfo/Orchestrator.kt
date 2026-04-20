@@ -39,6 +39,7 @@ class Orchestrator(private val context: Context) {
                         put("numero_celular", data.numeroCelular)
                         put("serial", data.serial)
                         put("mac_address", data.macAddress)
+                        put("usuario", data.usuario)
                         put("token", "CAMBIA_ESTE_TOKEN_SEGURO") // Debe coincidir con el GAS
                     }.toString()
 

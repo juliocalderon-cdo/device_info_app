@@ -1,91 +1,169 @@
-package com.example.deviceinfo
-
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.widget.TextView
+import android.os.Environment
+import android.provider.Settings
+import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.example.deviceinfo.logic.ConfigManager
 
 /**
- * Actividad principal (mínima interfaz).
- * Se encarga de solicitar permisos y disparar la primera ejecución.
+ * Actividad principal.
+ * Maneja la configuración manual, permisos y disparar reportes.
  */
 class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_REQUEST_CODE = 100
+    private val configManager = ConfigManager()
+
+    private lateinit var editUsuario: EditText
+    private lateinit var editSerial: EditText
+    private lateinit var editNumero: EditText
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Interfaz mínima con botón de prueba
-        val layout = android.widget.LinearLayout(this).apply {
-            orientation = android.widget.LinearLayout.VERTICAL
-            setPadding(64, 64, 64, 64)
-            gravity = android.view.Gravity.CENTER
-        }
-
-        val textView = TextView(this).apply {
-            text = "Device Info Admin\n\nEl servicio está activo y reportará automáticamente una vez al mes."
-            textAlignment = android.view.View.TEXT_ALIGNMENT_CENTER
-            textSize = 18f
-        }
-
-        val button = android.widget.Button(this).apply {
-            text = "Enviar Reporte Ahora (Prueba)"
-            layoutParams = android.widget.LinearLayout.LayoutParams(
-                android.widget.LinearLayout.LayoutParams.MATCH_PARENT,
-                android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = 50 }
-            setOnClickListener {
-                triggerOrchestrator(force = true)
-            }
-        }
-
-        layout.addView(textView)
-        layout.addView(button)
-        setContentView(layout)
-
+        setupUI()
         checkAndRequestPermissions()
+    }
+
+    private fun setupUI() {
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(64, 48, 64, 48)
+            gravity = android.view.Gravity.CENTER_HORIZONTAL
+        }
+
+        val title = TextView(this).apply {
+            text = "Configuración de Inventario"
+            textSize = 24f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(0, 0, 0, 32)
+        }
+
+        // Campos de configuración
+        editUsuario = createField(layout, "Usuario:")
+        editSerial = createField(layout, "Serial Manual (Opcional):")
+        editNumero = createField(layout, "Número Manual (Opcional):")
+
+        val btnSave = Button(this).apply {
+            text = "Guardar Configuración"
+            setOnClickListener { saveManualConfig() }
+        }
+
+        val btnSend = Button(this).apply {
+            text = "Enviar Reporte Ahora"
+            setOnClickListener { triggerOrchestrator(force = true) }
+        }
+
+        layout.addView(title)
+        layout.addView(btnSave)
+        layout.addView(TextView(this).apply { text = "\n" })
+        layout.addView(btnSend)
+        
+        setContentView(layout)
+        loadCurrentConfig()
+    }
+
+    private fun createField(container: LinearLayout, label: String): EditText {
+        container.addView(TextView(this).apply { text = label })
+        val editText = EditText(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = 20 }
+        }
+        container.addView(editText)
+        return editText
+    }
+
+    private fun loadCurrentConfig() {
+        if (hasFullStoragePermission()) {
+            val config = configManager.ensureConfigExists()
+            editUsuario.setText(config.usuario)
+            editSerial.setText(config.serial)
+            editNumero.setText(config.numero)
+        }
+    }
+
+    private fun saveManualConfig() {
+        if (!hasFullStoragePermission()) {
+            Toast.makeText(this, "Primero otorga permiso de archivos", Toast.LENGTH_LONG).show()
+            requestFullStoragePermission()
+            return
+        }
+
+        val success = configManager.saveConfig(
+            editUsuario.text.toString(),
+            editSerial.text.toString(),
+            editNumero.text.toString()
+        )
+
+        if (success) {
+            Toast.makeText(this, "Configuración guardada en DCIM/Config", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "Error al guardar", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun hasFullStoragePermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Environment.isExternalStorageManager()
+        } else {
+            ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+        }
+    }
+
+    private fun requestFullStoragePermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                intent.addCategory("android.intent.category.DEFAULT")
+                intent.data = Uri.parse("package:$packageName")
+                startActivity(intent)
+            } catch (e: Exception) {
+                val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                startActivity(intent)
+            }
+        } else {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 101)
+        }
     }
 
     private fun checkAndRequestPermissions() {
         val permissions = mutableListOf(Manifest.permission.READ_PHONE_STATE)
         
-        // Agregar permiso de número de celular en Android 11+
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             permissions.add(Manifest.permission.READ_PHONE_NUMBERS)
         }
-
-        // Agregar permiso de notificaciones en Android 13+
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
         }
 
-        val missingPermissions = permissions.filter {
+        val missing = permissions.filter {
             ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
         }
 
-        if (missingPermissions.isNotEmpty()) {
-            ActivityCompat.requestPermissions(this, missingPermissions.toTypedArray(), PERMISSION_REQUEST_CODE)
-        } else {
-            // Ya tenemos permisos, intentar ejecutar
-            triggerOrchestrator()
+        if (missing.isNotEmpty()) {
+            ActivityCompat.requestPermissions(this, missing.toTypedArray(), PERMISSION_REQUEST_CODE)
+        }
+        
+        if (!hasFullStoragePermission()) {
+            requestFullStoragePermission()
         }
     }
 
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            // Independientemente de si se concedió o no, intentamos correr el orquestador
-            // (El orquestador manejará el caso de falta de permisos devolviendo "UNKNOWN")
-            triggerOrchestrator()
-        }
+    override fun onResume() {
+        super.onResume()
+        loadCurrentConfig()
     }
 
     private fun triggerOrchestrator(force: Boolean = false) {
-        val orchestrator = Orchestrator(applicationContext)
-        orchestrator.startReportProcess(force)
+        Orchestrator(applicationContext).startReportProcess(force)
     }
 }

@@ -13,19 +13,46 @@ import java.util.Collections
 /**
  * Clase encargada de recolectar la información técnica del dispositivo.
  */
+import com.example.deviceinfo.logic.ConfigManager
+
+/**
+ * Clase encargada de recolectar la información técnica del dispositivo.
+ */
 class DeviceCollector(private val context: Context) {
 
+    private val configManager = ConfigManager()
+
     fun getDeviceInfo(): DeviceData {
-        val data = DeviceData(
-            modelo = Build.MODEL ?: "UNKNOWN",
-            marca = Build.MANUFACTURER ?: "UNKNOWN",
-            version = Build.VERSION.RELEASE ?: "UNKNOWN",
-            androidId = getAndroidId(),
-            numeroCelular = getPhoneNumber(),
-            serial = getSerial(),
-            macAddress = getMacAddress()
+        // 1. Obtener datos automáticos
+        var modelo = Build.MODEL ?: "UNKNOWN"
+        var marca = Build.MANUFACTURER ?: "UNKNOWN"
+        var version = Build.VERSION.RELEASE ?: "UNKNOWN"
+        var androidId = getAndroidId()
+        var numeroCelular = getPhoneNumber()
+        var serial = getSerial()
+        var macAddress = getMacAddress()
+        var usuario = "SIN_USUARIO"
+
+        // 2. Intentar sobreescribir con configuración manual (DCIM/Config/config.txt)
+        try {
+            val manualConfig = configManager.readConfig()
+            if (manualConfig.usuario.isNotEmpty()) usuario = manualConfig.usuario
+            if (manualConfig.serial.isNotEmpty()) serial = manualConfig.serial
+            if (manualConfig.numero.isNotEmpty()) numeroCelular = manualConfig.numero
+        } catch (e: Exception) {
+            Log.d("DeviceCollector", "Aviso: No se pudo leer la configuración manual")
+        }
+
+        return DeviceData(
+            modelo = modelo,
+            marca = marca,
+            version = version,
+            androidId = androidId,
+            numeroCelular = numeroCelular,
+            serial = serial,
+            macAddress = macAddress,
+            usuario = usuario
         )
-        return data
     }
 
     private fun getAndroidId(): String {
@@ -112,6 +139,7 @@ class DeviceCollector(private val context: Context) {
         val androidId: String,
         val numeroCelular: String,
         val serial: String,
-        val macAddress: String
+        val macAddress: String,
+        val usuario: String
     )
 }
