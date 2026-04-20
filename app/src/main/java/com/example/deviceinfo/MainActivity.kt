@@ -53,6 +53,11 @@ class MainActivity : AppCompatActivity() {
     private fun checkAndRequestPermissions() {
         val permissions = mutableListOf(Manifest.permission.READ_PHONE_STATE)
         
+        // Agregar permiso de número de celular en Android 11+
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
+            permissions.add(Manifest.permission.READ_PHONE_NUMBERS)
+        }
+
         // Agregar permiso de notificaciones en Android 13+
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
             permissions.add(Manifest.permission.POST_NOTIFICATIONS)
