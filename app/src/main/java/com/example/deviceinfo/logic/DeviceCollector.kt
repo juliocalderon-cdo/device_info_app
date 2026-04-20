@@ -7,13 +7,9 @@ import android.provider.Settings
 import android.telephony.SubscriptionManager
 import android.telephony.TelephonyManager
 import android.util.Log
+import com.example.deviceinfo.logic.ConfigManager
 import java.net.NetworkInterface
 import java.util.Collections
-
-/**
- * Clase encargada de recolectar la información técnica del dispositivo.
- */
-import com.example.deviceinfo.logic.ConfigManager
 
 /**
  * Clase encargada de recolectar la información técnica del dispositivo.
