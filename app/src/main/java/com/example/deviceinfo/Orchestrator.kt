@@ -25,7 +25,7 @@ class Orchestrator(private val context: Context) {
      */
     fun startReportProcess(force: Boolean = false) {
         if (force || tracker.shouldExecute()) {
-            Log.d("Orchestrator", "Iniciando reporte mensual...")
+            Log.d("Orchestrator", "Iniciando reporte diario...")
             
             // Ejecución en segundo plano para no bloquear el hilo principal
             executor.execute {
@@ -49,7 +49,7 @@ class Orchestrator(private val context: Context) {
                         Log.d("Orchestrator", "Datos enviados exitosamente.")
                         tracker.markExecutionSuccess()
                         NotificationHelper.showStatusNotification(
-                            context, true, "Inventario actualizado en Google Sheets."
+                            context, true, "Inventario actualizado en la Base de Datos."
                         )
                     } else {
                         Log.d("Orchestrator", "Fallo al enviar datos: $result")

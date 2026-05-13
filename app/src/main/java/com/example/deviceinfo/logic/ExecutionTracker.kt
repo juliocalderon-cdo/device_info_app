@@ -4,7 +4,7 @@ import android.content.Context
 import java.util.Calendar
 
 /**
- * Clase para verificar si la ejecución mensual ya fue realizada.
+ * Clase para verificar si la ejecución diaria ya fue realizada.
  */
 class ExecutionTracker(context: Context) {
 

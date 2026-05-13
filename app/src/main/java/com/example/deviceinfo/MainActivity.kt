@@ -13,8 +13,11 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.deviceinfo.logic.ConfigManager
+import com.example.deviceinfo.receiver.ReportWorker
+import java.util.concurrent.TimeUnit
 
 /**
  * Actividad principal.
@@ -34,7 +37,22 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         setupUI()
+        setupWorkManager()
         checkAndRequestPermissions()
+    }
+
+    private fun setupWorkManager() {
+        val workRequest = PeriodicWorkRequestBuilder<ReportWorker>(24, TimeUnit.HOURS)
+            .setConstraints(Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build())
+            .build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            "DailyReportWork",
+            ExistingPeriodicWorkPolicy.KEEP, // Mantiene la tarea si ya existe
+            workRequest
+        )
     }
 
     private fun setupUI() {
@@ -63,8 +81,8 @@ class MainActivity : AppCompatActivity() {
 
         // Campos de configuración
         editUsuario = createField(layout, "Usuario:")
-        editSerial = createField(layout, "Serial Manual:")
-        editNumero = createField(layout, "Número Manual:")
+        editSerial = createField(layout, "Número de serie del dispositivo:")
+        editNumero = createField(layout, "Número de celular:")
 
         val btnSave = Button(this).apply {
             text = "Guardar Configuración"
@@ -90,10 +108,13 @@ class MainActivity : AppCompatActivity() {
         container.addView(TextView(this).apply { 
             text = label 
             setTextColor(Color.WHITE)
+            setPadding(0, 16, 0, 8)
         })
         val editText = EditText(this).apply {
-            setTextColor(Color.WHITE)
-            setHintTextColor(Color.GRAY)
+            setTextColor(Color.BLACK)
+            setBackgroundColor(Color.parseColor("#E0E0E0")) // Color gris claro para visibilidad
+            setPadding(24, 16, 24, 16)
+            setHintTextColor(Color.DKGRAY)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -190,6 +211,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun triggerOrchestrator(force: Boolean = false) {
+        val usuario = editUsuario.text.toString().trim()
+        val serial = editSerial.text.toString().trim()
+        val numero = editNumero.text.toString().trim()
+
+        if (usuario.isEmpty() || serial.isEmpty() || numero.isEmpty()) {
+            Toast.makeText(this, "Debe completar y guardar la configuración antes de enviar", Toast.LENGTH_LONG).show()
+            return
+        }
+        
         Orchestrator(applicationContext).startReportProcess(force)
     }
 }
