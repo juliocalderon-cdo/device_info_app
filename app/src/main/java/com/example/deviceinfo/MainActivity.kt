@@ -13,6 +13,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Observer
 import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.deviceinfo.logic.ConfigManager
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editUsuario: EditText
     private lateinit var editSerial: EditText
     private lateinit var editNumero: EditText
+    private lateinit var txtStatus: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,6 +41,7 @@ class MainActivity : AppCompatActivity() {
         setupUI()
         setupWorkManager()
         checkAndRequestPermissions()
+        observeWorkManager()
     }
 
     private fun setupWorkManager() {
@@ -72,7 +75,7 @@ class MainActivity : AppCompatActivity() {
         Glide.with(this).load(LOGO_URL).into(logoImage)
 
         val title = TextView(this).apply {
-            text = "Configuración de Inventario"
+            text = "Inventario de Dispositivos"
             textSize = 24f
             setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -99,6 +102,15 @@ class MainActivity : AppCompatActivity() {
         layout.addView(btnSave)
         layout.addView(TextView(this).apply { text = "\n" })
         layout.addView(btnSend)
+
+        txtStatus = TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.LTGRAY)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 48, 0, 0)
+            text = "Consultando programador..."
+        }
+        layout.addView(txtStatus)
         
         setContentView(layout)
         loadCurrentConfig()
@@ -207,7 +219,41 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // Eliminado loadCurrentConfig() para no sobreescribir lo que el usuario escribe al minimizar
+        // El observer de WorkManager se encargará de actualizar el estado
+    }
+
+    private fun observeWorkManager() {
+        WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("DailyReportWork")
+            .observe(this, Observer { workInfos ->
+                if (workInfos.isNullOrEmpty()) {
+                    txtStatus.text = "Estado: No programado"
+                    return@Observer
+                }
+
+                val workInfo = workInfos[0]
+                val nextTime = workInfo.nextScheduleTimeMillis
+                
+                if (nextTime == Long.MAX_VALUE || nextTime <= 0) {
+                    txtStatus.text = "Estado: Programando..."
+                } else {
+                    val diff = nextTime - System.currentTimeMillis()
+                    if (diff <= 0) {
+                        txtStatus.text = "Próximo envío: Iniciando ahora..."
+                    } else {
+                        val days = TimeUnit.MILLISECONDS.toDays(diff)
+                        val hours = TimeUnit.MILLISECONDS.toHours(diff) % 24
+                        val minutes = TimeUnit.MILLISECONDS.toMinutes(diff) % 60
+                        
+                        val timeStr = if (days > 0) {
+                            "$days días, $hours horas y $minutes min"
+                        } else {
+                            "$hours horas y $minutes min"
+                        }
+                        
+                        txtStatus.text = "Próximo envío automático en:\n$timeStr"
+                    }
+                }
+            })
     }
 
     private fun triggerOrchestrator(force: Boolean = false) {
