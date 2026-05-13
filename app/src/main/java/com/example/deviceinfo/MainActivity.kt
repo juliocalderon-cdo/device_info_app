@@ -8,10 +8,12 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.graphics.Color
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import com.example.deviceinfo.logic.ConfigManager
 
 /**
@@ -22,6 +24,7 @@ class MainActivity : AppCompatActivity() {
 
     private val PERMISSION_REQUEST_CODE = 100
     private val configManager = ConfigManager()
+    private val LOGO_URL = "https://www.grupovierci.com/wp-content/uploads/2025/11/10paises_BLANCO-1024x640.png"
 
     private lateinit var editUsuario: EditText
     private lateinit var editSerial: EditText
@@ -39,19 +42,29 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             setPadding(64, 48, 64, 48)
             gravity = android.view.Gravity.CENTER_HORIZONTAL
+            setBackgroundColor(Color.parseColor("#0a0f1e"))
         }
+
+        // Logo
+        val logoImage = ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(600, 400).apply {
+                bottomMargin = 32
+            }
+        }
+        Glide.with(this).load(LOGO_URL).into(logoImage)
 
         val title = TextView(this).apply {
             text = "Configuración de Inventario"
             textSize = 24f
+            setTextColor(Color.WHITE)
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(0, 0, 0, 32)
         }
 
         // Campos de configuración
         editUsuario = createField(layout, "Usuario:")
-        editSerial = createField(layout, "Serial Manual (Opcional):")
-        editNumero = createField(layout, "Número Manual (Opcional):")
+        editSerial = createField(layout, "Serial Manual:")
+        editNumero = createField(layout, "Número Manual:")
 
         val btnSave = Button(this).apply {
             text = "Guardar Configuración"
@@ -63,6 +76,7 @@ class MainActivity : AppCompatActivity() {
             setOnClickListener { triggerOrchestrator(force = true) }
         }
 
+        layout.addView(logoImage)
         layout.addView(title)
         layout.addView(btnSave)
         layout.addView(TextView(this).apply { text = "\n" })
@@ -73,8 +87,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun createField(container: LinearLayout, label: String): EditText {
-        container.addView(TextView(this).apply { text = label })
+        container.addView(TextView(this).apply { 
+            text = label 
+            setTextColor(Color.WHITE)
+        })
         val editText = EditText(this).apply {
+            setTextColor(Color.WHITE)
+            setHintTextColor(Color.GRAY)
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT, 
                 LinearLayout.LayoutParams.WRAP_CONTENT
@@ -100,11 +119,16 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val success = configManager.saveConfig(
-            editUsuario.text.toString(),
-            editSerial.text.toString(),
-            editNumero.text.toString()
-        )
+        val usuario = editUsuario.text.toString().trim()
+        val serial = editSerial.text.toString().trim()
+        val numero = editNumero.text.toString().trim()
+
+        if (usuario.isEmpty() || serial.isEmpty() || numero.isEmpty()) {
+            Toast.makeText(this, "Todos los campos son obligatorios", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        val success = configManager.saveConfig(usuario, serial, numero)
 
         if (success) {
             Toast.makeText(this, "Configuración guardada en DCIM/Config", Toast.LENGTH_SHORT).show()
@@ -162,7 +186,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        loadCurrentConfig()
+        // Eliminado loadCurrentConfig() para no sobreescribir lo que el usuario escribe al minimizar
     }
 
     private fun triggerOrchestrator(force: Boolean = false) {
