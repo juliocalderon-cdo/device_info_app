@@ -224,10 +224,10 @@ class MainActivity : AppCompatActivity() {
     private fun updateStatusUI() {
         val lastTime = tracker.getLastExecutionTime()
         val currentTime = System.currentTimeMillis()
-        val interval = 5 * 60 * 1000L // 5 minutos
+        val interval = 3 * 60 * 60 * 1000L // 3 horas
         
         if (lastTime == 0L) {
-            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 5 min"
+            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 3 horas"
         } else {
             val nextTime = lastTime + interval
             val diff = nextTime - currentTime
@@ -235,9 +235,9 @@ class MainActivity : AppCompatActivity() {
             if (diff <= 0) {
                 txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Iniciando..."
             } else {
-                val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
-                val seconds = TimeUnit.MILLISECONDS.toSeconds(diff) % 60
-                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $minutes min $seconds seg"
+                val hours = TimeUnit.MILLISECONDS.toHours(diff)
+                val minutes = (TimeUnit.MILLISECONDS.toMinutes(diff) % 60)
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $hours h y $minutes min"
             }
         }
     }

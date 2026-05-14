@@ -16,9 +16,9 @@ class ExecutionTracker(context: Context) {
     fun shouldExecute(): Boolean {
         val lastTime = getLastExecutionTime()
         val currentTime = System.currentTimeMillis()
-        val fiveMinutesInMs = 5 * 60 * 1000
+        val threeHoursInMs = 3 * 60 * 60 * 1000L
         
-        return (currentTime - lastTime) >= fiveMinutesInMs
+        return (currentTime - lastTime) >= threeHoursInMs
     }
 
     /**
