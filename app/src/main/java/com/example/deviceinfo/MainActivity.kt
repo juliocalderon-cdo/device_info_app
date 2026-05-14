@@ -18,6 +18,7 @@ import androidx.work.*
 import com.bumptech.glide.Glide
 import com.example.deviceinfo.logic.ConfigManager
 import com.example.deviceinfo.receiver.ReportWorker
+import com.example.deviceinfo.service.InventoryService
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,26 +40,21 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         setupUI()
-        setupWorkManager()
+        // Iniciamos el servicio de primer plano para ejecución garantizada
+        startInventoryService()
         checkAndRequestPermissions()
-        observeWorkManager()
+        updateStatusUI()
     }
 
-    private fun setupWorkManager() {
-        val workRequest = OneTimeWorkRequestBuilder<ReportWorker>()
-            .setInitialDelay(5, TimeUnit.MINUTES)
-            .setConstraints(Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build())
-            .addTag("FiveMinuteWork")
-            .build()
-
-        WorkManager.getInstance(this).enqueueUniqueWork(
-            "DailyReportWork",
-            ExistingWorkPolicy.KEEP, 
-            workRequest
-        )
+    private fun startInventoryService() {
+        val intent = Intent(this, InventoryService::class.java)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            startForegroundService(intent)
+        } else {
+            startService(intent)
+        }
     }
+
 
     private fun setupUI() {
         val layout = LinearLayout(this).apply {
@@ -221,41 +217,28 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        // El observer de WorkManager se encargará de actualizar el estado
+        updateStatusUI()
     }
 
-    private fun observeWorkManager() {
-        WorkManager.getInstance(this).getWorkInfosForUniqueWorkLiveData("DailyReportWork")
-            .observe(this, Observer { workInfos ->
-                if (workInfos.isNullOrEmpty()) {
-                    txtStatus.text = "Estado: No programado"
-                    return@Observer
-                }
-
-                val workInfo = workInfos[0]
-                val nextTime = workInfo.nextScheduleTimeMillis
-                
-                if (nextTime == Long.MAX_VALUE || nextTime <= 0) {
-                    txtStatus.text = "Estado: Programando..."
-                } else {
-                    val diff = nextTime - System.currentTimeMillis()
-                    if (diff <= 0) {
-                        txtStatus.text = "Próximo envío: Iniciando ahora..."
-                    } else {
-                        val days = TimeUnit.MILLISECONDS.toDays(diff)
-                        val hours = TimeUnit.MILLISECONDS.toHours(diff) % 24
-                        val minutes = TimeUnit.MILLISECONDS.toMinutes(diff) % 60
-                        
-                        val timeStr = if (days > 0) {
-                            "$days días, $hours horas y $minutes min"
-                        } else {
-                            "$hours horas y $minutes min"
-                        }
-                        
-                        txtStatus.text = "Próximo envío automático en:\n$timeStr"
-                    }
-                }
-            })
+    private fun updateStatusUI() {
+        val lastTime = tracker.getLastExecutionTime()
+        val currentTime = System.currentTimeMillis()
+        val interval = 5 * 60 * 1000L // 5 minutos
+        
+        if (lastTime == 0L) {
+            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 5 min"
+        } else {
+            val nextTime = lastTime + interval
+            val diff = nextTime - currentTime
+            
+            if (diff <= 0) {
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Iniciando..."
+            } else {
+                val minutes = TimeUnit.MILLISECONDS.toMinutes(diff)
+                val seconds = TimeUnit.MILLISECONDS.toSeconds(diff) % 60
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $minutes min $seconds seg"
+            }
+        }
     }
 
     private fun triggerOrchestrator(force: Boolean = false) {

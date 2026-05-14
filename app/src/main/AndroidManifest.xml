@@ -9,6 +9,8 @@
     <uses-permission android:name="android.permission.READ_PHONE_NUMBERS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
 
     <application
         android:allowBackup="true"
@@ -34,6 +36,13 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
+        <!-- FOREGROUND SERVICE -->
+        <service
+            android:name=".service.InventoryService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
     </application>
 
