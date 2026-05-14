@@ -29,7 +29,12 @@ class ExecutionTracker(context: Context) {
         prefs.edit().apply {
             putInt("last_day", calendar.get(Calendar.DAY_OF_YEAR))
             putInt("last_year", calendar.get(Calendar.YEAR))
+            putLong("last_time_ms", System.currentTimeMillis())
             apply()
         }
+    }
+
+    fun getLastExecutionTime(): Long {
+        return prefs.getLong("last_time_ms", 0L)
     }
 }
