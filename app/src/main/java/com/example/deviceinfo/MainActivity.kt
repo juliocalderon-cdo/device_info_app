@@ -30,6 +30,7 @@ class MainActivity : AppCompatActivity() {
     private val PERMISSION_REQUEST_CODE = 100
     private val configManager = ConfigManager()
     private val LOGO_URL = "https://www.grupovierci.com/wp-content/uploads/2025/11/10paises_BLANCO-1024x640.png"
+    private val tracker by lazy { com.example.deviceinfo.logic.ExecutionTracker(this) }
 
     private lateinit var editUsuario: EditText
     private lateinit var editSerial: EditText
