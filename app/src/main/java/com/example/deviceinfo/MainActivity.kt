@@ -45,15 +45,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupWorkManager() {
-        val workRequest = PeriodicWorkRequestBuilder<ReportWorker>(24, TimeUnit.HOURS)
+        val workRequest = OneTimeWorkRequestBuilder<ReportWorker>()
+            .setInitialDelay(5, TimeUnit.MINUTES)
             .setConstraints(Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build())
+            .addTag("FiveMinuteWork")
             .build()
 
-        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+        WorkManager.getInstance(this).enqueueUniqueWork(
             "DailyReportWork",
-            ExistingPeriodicWorkPolicy.KEEP, // Mantiene la tarea si ya existe
+            ExistingWorkPolicy.KEEP, 
             workRequest
         )
     }

@@ -11,18 +11,14 @@ class ExecutionTracker(context: Context) {
     private val prefs = context.getSharedPreferences("execution_prefs", Context.MODE_PRIVATE)
 
     /**
-     * Compara el día actual con el guardado en SharedPreferences.
-     * Retorna true si es un nuevo día o si nunca se ha ejecutado.
+     * Retorna true si han pasado al menos 5 minutos desde la última ejecución.
      */
     fun shouldExecute(): Boolean {
-        val lastDay = prefs.getInt("last_day", -1)
-        val lastYear = prefs.getInt("last_year", -1)
-
-        val calendar = Calendar.getInstance()
-        val currentDay = calendar.get(Calendar.DAY_OF_YEAR)
-        val currentYear = calendar.get(Calendar.YEAR)
-
-        return (currentDay != lastDay || currentYear != lastYear)
+        val lastTime = getLastExecutionTime()
+        val currentTime = System.currentTimeMillis()
+        val fiveMinutesInMs = 5 * 60 * 1000
+        
+        return (currentTime - lastTime) >= fiveMinutesInMs
     }
 
     /**
