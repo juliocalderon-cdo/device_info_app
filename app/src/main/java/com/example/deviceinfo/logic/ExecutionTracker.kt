@@ -37,4 +37,16 @@ class ExecutionTracker(context: Context) {
     fun getLastExecutionTime(): Long {
         return prefs.getLong("last_time_ms", 0L)
     }
+
+    fun saveError(message: String) {
+        prefs.edit().putString("last_error", message).apply()
+    }
+
+    fun getLastError(): String {
+        return prefs.getString("last_error", "") ?: ""
+    }
+
+    fun clearError() {
+        prefs.edit().remove("last_error").apply()
+    }
 }

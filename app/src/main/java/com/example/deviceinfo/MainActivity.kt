@@ -238,6 +238,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun updateStatusUI() {
         val lastTime = tracker.getLastExecutionTime()
+        val lastError = tracker.getLastError()
         val currentTime = System.currentTimeMillis()
         val interval = 1 * 60 * 60 * 1000L // 1 hora
         
@@ -248,9 +249,9 @@ class MainActivity : AppCompatActivity() {
             val diff = nextTime - currentTime
             
             if (diff <= 0) {
-                txtStatus.text = "Servicio de Inventario: ACTIVO\nEn proceso de envío automático..."
+                val errorMsg = if (lastError.isNotEmpty()) "\n(Último fallo: $lastError)" else ""
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nEn proceso de envío automático...$errorMsg"
             } else {
-                val hours = TimeUnit.MILLISECONDS.toHours(diff)
                 val minutes = (TimeUnit.MILLISECONDS.toMinutes(diff) % 60)
                 val seconds = (TimeUnit.MILLISECONDS.toSeconds(diff) % 60)
                 

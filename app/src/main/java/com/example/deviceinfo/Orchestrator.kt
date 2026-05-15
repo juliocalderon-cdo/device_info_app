@@ -54,17 +54,20 @@ class Orchestrator(private val context: Context) {
                     if (result == "OK") {
                         Log.d("Orchestrator", "Datos enviados exitosamente.")
                         tracker.markExecutionSuccess()
+                        tracker.clearError()
                         NotificationHelper.showStatusNotification(
                             context, true, "Inventario actualizado en la Base de Datos."
                         )
                     } else {
                         Log.d("Orchestrator", "Fallo al enviar datos: $result")
+                        tracker.saveError(result)
                         NotificationHelper.showStatusNotification(
                             context, false, result
                         )
                     }
                 } catch (e: Exception) {
                     Log.e("Orchestrator", "Error crítico en proceso de reporte: ${e.message}", e)
+                    tracker.saveError("Err: ${e.message?.take(20)}")
                     NotificationHelper.showStatusNotification(
                         context, false, "Error: ${e.message?.take(30)}"
                     )
