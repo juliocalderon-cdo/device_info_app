@@ -20,7 +20,7 @@ import com.example.deviceinfo.Orchestrator
 class InventoryService : Service() {
 
     private val handler = Handler(Looper.getMainLooper())
-    private val INTERVAL = 3 * 60 * 60 * 1000L // 3 horas
+    private val INTERVAL = 1 * 60 * 60 * 1000L // 1 hora
     private val CHANNEL_ID = "inventory_service_channel"
     private val NOTIFICATION_ID = 101
 

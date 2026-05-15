@@ -36,6 +36,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editSerial: EditText
     private lateinit var editNumero: EditText
     private lateinit var txtStatus: TextView
+    private val handlerUI = Handler(Looper.getMainLooper())
+    private val refreshRunnable = object : Runnable {
+        override fun run() {
+            updateStatusUI()
+            handlerUI.postDelayed(this, 1000)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -219,25 +226,33 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateStatusUI()
+        handlerUI.post(refreshRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        handlerUI.removeCallbacks(refreshRunnable)
     }
 
     private fun updateStatusUI() {
         val lastTime = tracker.getLastExecutionTime()
         val currentTime = System.currentTimeMillis()
-        val interval = 3 * 60 * 60 * 1000L // 3 horas
+        val interval = 1 * 60 * 60 * 1000L // 1 hora
         
         if (lastTime == 0L) {
-            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 3 horas"
+            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 1 hora"
         } else {
             val nextTime = lastTime + interval
             val diff = nextTime - currentTime
             
             if (diff <= 0) {
-                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Iniciando..."
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nEn proceso de envío automático..."
             } else {
                 val hours = TimeUnit.MILLISECONDS.toHours(diff)
                 val minutes = (TimeUnit.MILLISECONDS.toMinutes(diff) % 60)
-                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $hours h y $minutes min"
+                val seconds = (TimeUnit.MILLISECONDS.toSeconds(diff) % 60)
+                
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $minutes min $seconds seg"
             }
         }
     }

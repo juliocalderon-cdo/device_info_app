@@ -20,6 +20,10 @@ class Orchestrator(private val context: Context) {
     private val network = NetworkClient()
     private val executor = Executors.newSingleThreadExecutor()
 
+    init {
+        Log.d("Orchestrator", "Orquestador inicializado.")
+    }
+
     /**
      * Inicia el proceso de reporte si corresponde al mes actual o si se fuerza.
      */
@@ -30,7 +34,9 @@ class Orchestrator(private val context: Context) {
             // Ejecución en segundo plano para no bloquear el hilo principal
             executor.execute {
                 try {
+                    Log.d("Orchestrator", "Recolectando datos...")
                     val data = collector.getDeviceInfo()
+                    Log.d("Orchestrator", "Enviando a red...")
                     val json = JSONObject().apply {
                         put("modelo", data.modelo)
                         put("marca", data.marca)
@@ -58,7 +64,7 @@ class Orchestrator(private val context: Context) {
                         )
                     }
                 } catch (e: Exception) {
-                    Log.d("Orchestrator", "Error: ${e.message}")
+                    Log.e("Orchestrator", "Error crítico en proceso de reporte: ${e.message}", e)
                     NotificationHelper.showStatusNotification(
                         context, false, "Error: ${e.message?.take(30)}"
                     )
