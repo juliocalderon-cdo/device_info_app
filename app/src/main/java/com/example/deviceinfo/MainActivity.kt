@@ -9,6 +9,8 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.graphics.Color
+import android.os.Handler
+import android.os.Looper
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
