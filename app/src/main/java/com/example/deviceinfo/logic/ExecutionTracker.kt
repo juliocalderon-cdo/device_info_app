@@ -11,23 +11,26 @@ class ExecutionTracker(context: Context) {
     private val prefs = context.getSharedPreferences("execution_prefs", Context.MODE_PRIVATE)
 
     /**
-     * Retorna true si han pasado al menos 5 minutos desde la última ejecución.
+     * Retorna true si ha cambiado el mes o el año desde la última ejecución.
      */
     fun shouldExecute(): Boolean {
-        val lastTime = getLastExecutionTime()
-        val currentTime = System.currentTimeMillis()
-        val oneHourInMs = 1 * 60 * 60 * 1000L
-        
-        return (currentTime - lastTime) >= oneHourInMs
+        val lastMonth = prefs.getInt("last_month", -1)
+        val lastYear = prefs.getInt("last_year", -1)
+
+        val calendar = Calendar.getInstance()
+        val currentMonth = calendar.get(Calendar.MONTH)
+        val currentYear = calendar.get(Calendar.YEAR)
+
+        return (currentMonth != lastMonth || currentYear != lastYear)
     }
 
     /**
-     * Guarda el día y año actual como la última ejecución exitosa.
+     * Guarda el mes y año actual como la última ejecución exitosa, además del timestamp.
      */
     fun markExecutionSuccess() {
         val calendar = Calendar.getInstance()
         prefs.edit().apply {
-            putInt("last_day", calendar.get(Calendar.DAY_OF_YEAR))
+            putInt("last_month", calendar.get(Calendar.MONTH))
             putInt("last_year", calendar.get(Calendar.YEAR))
             putLong("last_time_ms", System.currentTimeMillis())
             apply()

@@ -36,6 +36,17 @@ class Orchestrator(private val context: Context) {
                 try {
                     Log.d("Orchestrator", "Recolectando datos...")
                     val data = collector.getDeviceInfo()
+                    
+                    // Validación para evitar enviar un reporte si la app no está configurada.
+                    if (data.usuario == "SIN_USUARIO" || data.usuario.isEmpty()) {
+                        Log.d("Orchestrator", "Abortando envío: La configuración está vacía.")
+                        tracker.saveError("Configuración incompleta.")
+                        NotificationHelper.showStatusNotification(
+                            context, false, "Falta completar la configuración."
+                        )
+                        return@execute
+                    }
+
                     Log.d("Orchestrator", "Enviando a red...")
                     val json = JSONObject().apply {
                         put("modelo", data.modelo)

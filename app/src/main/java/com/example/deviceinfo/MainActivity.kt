@@ -38,13 +38,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var editSerial: EditText
     private lateinit var editNumero: EditText
     private lateinit var txtStatus: TextView
-    private val handlerUI = Handler(Looper.getMainLooper())
-    private val refreshRunnable = object : Runnable {
-        override fun run() {
-            updateStatusUI()
-            handlerUI.postDelayed(this, 1000)
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,6 +112,16 @@ class MainActivity : AppCompatActivity() {
             text = "Consultando programador..."
         }
         layout.addView(txtStatus)
+
+        // Mostrar la versión de la app
+        val txtVersion = TextView(this).apply {
+            text = "Versión: ${BuildConfig.VERSION_NAME}"
+            textSize = 12f
+            setTextColor(Color.GRAY)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, 24, 0, 0)
+        }
+        layout.addView(txtVersion)
         
         setContentView(layout)
         loadCurrentConfig()
@@ -228,34 +231,26 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updateStatusUI()
-        handlerUI.post(refreshRunnable)
     }
 
     override fun onPause() {
         super.onPause()
-        handlerUI.removeCallbacks(refreshRunnable)
     }
 
     private fun updateStatusUI() {
         val lastTime = tracker.getLastExecutionTime()
         val lastError = tracker.getLastError()
-        val currentTime = System.currentTimeMillis()
-        val interval = 1 * 60 * 60 * 1000L // 1 hora
         
         if (lastTime == 0L) {
-            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado cada 1 hora"
+            txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío: Programado (Primer envío)"
         } else {
-            val nextTime = lastTime + interval
-            val diff = nextTime - currentTime
-            
-            if (diff <= 0) {
+            if (tracker.shouldExecute()) {
                 val errorMsg = if (lastError.isNotEmpty()) "\n(Último fallo: $lastError)" else ""
                 txtStatus.text = "Servicio de Inventario: ACTIVO\nEn proceso de envío automático...$errorMsg"
             } else {
-                val minutes = (TimeUnit.MILLISECONDS.toMinutes(diff) % 60)
-                val seconds = (TimeUnit.MILLISECONDS.toSeconds(diff) % 60)
-                
-                txtStatus.text = "Servicio de Inventario: ACTIVO\nPróximo envío en: $minutes min $seconds seg"
+                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                val lastDateStr = sdf.format(java.util.Date(lastTime))
+                txtStatus.text = "Servicio de Inventario: ACTIVO\nÚltimo envío: $lastDateStr\nPróximo: Siguiente mes"
             }
         }
     }
