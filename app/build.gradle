@@ -30,7 +30,7 @@ android {
     applicationVariants.all { variant ->
         variant.outputs.all { output ->
             def newApkName = "Inventario_de_Dispositivos_v${variant.versionName}.apk"
-            outputFileName = new File("", newApkName)
+            outputFileName = newApkName
         }
     }
 }
